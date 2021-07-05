@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Borsa", "Borsa\Borsa.csproj", "{6F11353F-9FDF-4537-B5AD-7976367AF160}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6F11353F-9FDF-4537-B5AD-7976367AF160}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F11353F-9FDF-4537-B5AD-7976367AF160}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F11353F-9FDF-4537-B5AD-7976367AF160}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F11353F-9FDF-4537-B5AD-7976367AF160}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
