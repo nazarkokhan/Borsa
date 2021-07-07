@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Borsa.DTO;
+using Borsa.DTO.Authorization;
 
 namespace Borsa.Services.Abstract
 {

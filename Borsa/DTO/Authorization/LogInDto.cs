@@ -1,4 +1,4 @@
-﻿namespace Borsa.DTO
+﻿namespace Borsa.DTO.Authorization
 {
     public class LogInDto
     {

@@ -1,9 +1,8 @@
 ﻿using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Borsa.DTO;
+using Borsa.DTO.Authorization;
 using Borsa.Services.Abstract;
 
 namespace Borsa.Services
@@ -12,9 +11,13 @@ namespace Borsa.Services
     {
         private readonly HttpClient _httpClient;
 
-        public LoginService(IHttpClientFactory httpClientFactory)
+        private readonly ITokenStorage _jsonFileTokenStorage;
+
+        public LoginService(IHttpClientFactory httpClientFactory, ITokenStorage tokenStorage)
         {
             _httpClient = httpClientFactory.CreateClient(nameof(LoginService));
+
+            _jsonFileTokenStorage = tokenStorage;
         }
 
         public async Task<TokenDto> LogInAsync(LogInDto logInDto)
@@ -29,11 +32,16 @@ namespace Borsa.Services
 
             response.EnsureSuccessStatusCode();
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseToken = JsonSerializer
+                .Deserialize<TokenDto>(
+                    await response.Content.ReadAsStringAsync()
+                );
 
-            return JsonSerializer.Deserialize<TokenDto>(responseBody);
+            await _jsonFileTokenStorage.SaveToken(responseToken);
+
+            return responseToken;
         }
-        
+
         public async Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshToken)
         {
             var json = JsonSerializer.Serialize(refreshToken);
@@ -46,9 +54,14 @@ namespace Borsa.Services
 
             response.EnsureSuccessStatusCode();
 
-            var responseBody = await response.Content.ReadAsStringAsync();
+            var responseToken = JsonSerializer
+                .Deserialize<TokenDto>(
+                    await response.Content.ReadAsStringAsync()
+                );
 
-            return JsonSerializer.Deserialize<TokenDto>(responseBody);
+            await _jsonFileTokenStorage.SaveToken(responseToken);
+
+            return responseToken;
         }
     }
 }

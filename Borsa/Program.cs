@@ -1,40 +1,74 @@
 ﻿using System;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Borsa.Constants;
 using Borsa.DTO;
 using Borsa.Services;
 using Borsa.Services.Abstract;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text.Json;
+using Borsa.DTO.Authorization;
 
 namespace Borsa
 {
-    class Program
+    static class Program
     {
-        static async Task Main(string[] args)
+        static async Task Main()
         {
             var services = new ServiceCollection();
 
-            services.AddHttpClient(nameof(LoginService), client =>
-            {
-                client.BaseAddress = new Uri("https://borsa.levent.io");
-            }).Services.AddScoped<ILoginService, LoginService>();
-            
-            LogInDto logInDto =
-                new LogInDto(LoginData.Email, LoginData.Password, new DeviceDto("RandomToken", "Android"));
-            
+            services
+                .AddScoped<ILoginService, LoginService>()
+                .AddScoped<IAlertService, AlertService>()
+                .AddSingleton<ITokenStorage, JsonFileTokenStorage>()
+                .AddScoped<AuthInterceptor>()
+                .AddHttpClient(
+                    nameof(LoginService),
+                    client => { client.BaseAddress = new Uri("https://borsa.levent.io"); }
+                )
+                .Services
+                .AddHttpClient(
+                    "AuthClient",
+                    client => { client.BaseAddress = new Uri("https://borsa.levent.io"); }
+                )
+                .AddHttpMessageHandler<AuthInterceptor>();
+
             var provider = services.BuildServiceProvider();
 
-            var loginService = provider.GetRequiredService<ILoginService>();
+            var logInService = provider.GetRequiredService<ILoginService>();
 
-            var token = await loginService!.LogInAsync(logInDto);
+            await logInService.LogInAsync(new LogInDto(
+                LoginData.Email,
+                LoginData.Password,
+                new DeviceDto("RandomDeviceToken", "Android")
+            ));
 
-            var refreshToken = await loginService!.RefreshTokenAsync(new RefreshTokenDto(token.RefreshToken));
+            var alertService = provider.GetRequiredService<IAlertService>();
+
+            // var alert = new CreateAlertDto(
+            //     new List<CreateConditionDto>
+            //     {
+            //         new CreateConditionDto(CompareType.BiggerThen, default, default ,1)
+            //         CompareType.BiggerThen,
+            //         new CreateExpressionDto
+            //         (
+            //             IndicatorType.Number,
+            //             default
+            //         ),
+            //         new CreateExpressionDto
+            //         (
+            //             IndicatorType.Number,
+            //             default
+            //         ),
+            //         1
+            //     },
+            //     "Alert",
+            //     BuySell.Buy,
+            //     true
+            // );
             
-            Console.WriteLine(refreshToken.Token);
-            
+            var some = await alertService.CreateAlert(default);
+
+            Console.WriteLine(some);
+
             Console.ReadLine();
         }
     }
