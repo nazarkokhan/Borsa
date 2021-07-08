@@ -32,12 +32,10 @@ namespace Borsa
 
                 if (token.IsExpired())
                 {
-                    var newToken = await _loginService
+                    token = await _loginService
                         .RefreshTokenAsync(new RefreshTokenDto(token.RefreshToken));
 
-                    await _jsonFileTokenStorage.SaveToken(newToken);
-
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newToken.Token);
+                    await _jsonFileTokenStorage.SaveToken(token);
                 }
                 
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
@@ -46,12 +44,12 @@ namespace Borsa
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    var newToken = await _loginService
+                    token = await _loginService
                         .RefreshTokenAsync(new RefreshTokenDto(token.RefreshToken));
 
-                    await _jsonFileTokenStorage.SaveToken(newToken);
+                    await _jsonFileTokenStorage.SaveToken(token);
 
-                    request.Headers.Add("Authorization", $"Bearer {newToken.Token}");
+                    request.Headers.Add("Authorization", $"Bearer {token.Token}");
                 }
 
                 return await base.SendAsync(request, cancellationToken);

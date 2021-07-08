@@ -7,7 +7,9 @@ namespace Borsa.DTO.Alert
 {
     public class AlertDto
     {
-        public AlertDto(long id, string name, DateTime createTime, string notes, ActivityStatus status, int userId, List<ConditionDto> conditions, BuySell buySell)
+        public AlertDto(int id, string name, DateTime createTime, 
+            string notes, ActivityStatus status, int userId, 
+            List<ConditionDto> conditions, BuySell buySell)
         {
             Id = id;
             Name = name;
@@ -20,7 +22,7 @@ namespace Borsa.DTO.Alert
         }
 
         [JsonPropertyName("id")]
-        public long Id { get; }
+        public int Id { get; }
 
         [JsonPropertyName("name")]
         public string Name { get; }
@@ -39,7 +41,7 @@ namespace Borsa.DTO.Alert
 
         [JsonPropertyName("conditions")]
         public List<ConditionDto> Conditions { get; }
-
+        
         [JsonPropertyName("buySell")]
         public BuySell BuySell { get; }
     }

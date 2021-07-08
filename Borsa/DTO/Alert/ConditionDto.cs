@@ -5,8 +5,7 @@ namespace Borsa.DTO.Alert
 {
     public class ConditionDto
     {
-        public ConditionDto(
-            CompareType compareType, ExpressionDto leftExpression, 
+        public ConditionDto(CompareType compareType, ExpressionDto leftExpression, 
             ExpressionDto rightExpression, InstrumentDto instrument)
         {
             CompareType = compareType;

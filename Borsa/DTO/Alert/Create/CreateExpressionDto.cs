@@ -7,7 +7,7 @@ namespace Borsa.DTO.Alert.Create
     public class CreateExpressionDto
     {
         public CreateExpressionDto(
-            IndicatorType indicatorType, Dictionary<IndicatorType, string> parameters)
+            IndicatorType indicatorType, Dictionary<string, string> parameters)
         {
             IndicatorType = indicatorType;
             Parameters = parameters;
@@ -17,6 +17,6 @@ namespace Borsa.DTO.Alert.Create
         public IndicatorType IndicatorType { get; }
 
         [JsonPropertyName("parameters")]
-        public Dictionary<IndicatorType, string> Parameters { get; }
+        public Dictionary<string, string> Parameters { get; }
     }
 }

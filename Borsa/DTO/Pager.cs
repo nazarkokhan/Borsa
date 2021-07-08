@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Borsa.DTO
 {
@@ -12,8 +13,10 @@ namespace Borsa.DTO
         }
 
         [DataMember]
+        [JsonPropertyName("data")]
         public IReadOnlyCollection<TData> Data { get; }
 
+        [JsonPropertyName("totalCount")]
         public long TotalCount { get; }
     }
 }

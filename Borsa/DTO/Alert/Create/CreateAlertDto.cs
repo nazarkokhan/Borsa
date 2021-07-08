@@ -21,10 +21,10 @@ namespace Borsa.DTO.Alert.Create
         public List<CreateConditionDto> Conditions { get; }
 
         [JsonPropertyName("name")]
-        public string Name { get; }
+        public string Name { get;  }
 
         [JsonPropertyName("notes")]
-        public string Notes { get; }
+        public string Notes { get;  }
         
         [JsonPropertyName("buySell")]
         public BuySell BuySell { get; }
