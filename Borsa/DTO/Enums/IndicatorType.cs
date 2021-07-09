@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Borsa.DTO.Enums
+﻿namespace Borsa.DTO.Enums
 {
     public enum IndicatorType
     {

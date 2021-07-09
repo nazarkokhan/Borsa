@@ -1,6 +1,6 @@
 ﻿namespace Borsa.Constants
 {
-    public class LoginData
+    public static class LoginData
     {
         public const string Email = "nazarkokhan@gmail.com";
 

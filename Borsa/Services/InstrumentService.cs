@@ -1,11 +1,9 @@
 ﻿using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Borsa.Constants;
 using Borsa.DTO;
 using Borsa.DTO.Alert;
-using Borsa.DTO.Alert.Create;
 using Borsa.Services.Abstract;
 
 namespace Borsa.Services

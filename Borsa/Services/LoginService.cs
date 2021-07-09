@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Borsa.Constants;
 using Borsa.DTO.Authorization;
 using Borsa.Services.Abstract;
 
@@ -27,7 +28,7 @@ namespace Borsa.Services
             var response = await _httpClient
                 .PostAsync(
                     "Auth/token",
-                    new StringContent(json, Encoding.UTF8, "application/json")
+                    new StringContent(json, Encoding.UTF8, FileName.Json)
                 );
 
             response.EnsureSuccessStatusCode();
@@ -49,7 +50,7 @@ namespace Borsa.Services
             var response = await _httpClient
                 .PostAsync(
                     "Auth/refresh-token",
-                    new StringContent(json, Encoding.UTF8, "application/json")
+                    new StringContent(json, Encoding.UTF8, FileName.Json)
                 );
 
             response.EnsureSuccessStatusCode();
