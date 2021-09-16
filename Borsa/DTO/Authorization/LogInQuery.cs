@@ -1,18 +1,17 @@
 ﻿namespace Borsa.DTO.Authorization
 {
-    public class LogInDto
+    public class LogInQuery
     {
-        public LogInDto(string email, string password, DeviceDto device)
+        public LogInQuery(
+            string email, 
+            string password)
         {
             Email = email;
             Password = password;
-            Device = device;
         }
 
         public string Email { get; }
 
         public string Password { get; }
-
-        public DeviceDto Device { get; }
     }
 }

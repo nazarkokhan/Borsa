@@ -33,7 +33,7 @@ namespace Borsa
                 if (token.IsExpired())
                 {
                     token = await _loginService
-                        .RefreshTokenAsync(new RefreshTokenDto(token.RefreshToken));
+                        .RefreshTokenAsync(new RefreshTokenQuery(token.RefreshToken));
 
                     await _jsonFileTokenStorage.SaveToken(token);
                 }
@@ -45,7 +45,7 @@ namespace Borsa
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     token = await _loginService
-                        .RefreshTokenAsync(new RefreshTokenDto(token.RefreshToken));
+                        .RefreshTokenAsync(new RefreshTokenQuery(token.RefreshToken));
 
                     await _jsonFileTokenStorage.SaveToken(token);
 

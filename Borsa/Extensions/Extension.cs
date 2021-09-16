@@ -5,9 +5,9 @@ namespace Borsa.Extensions
 {
     public static class Extension
     {
-        public static bool IsExpired(this TokenDto tokenDto)
+        public static bool IsExpired(this LogInQueryResult logInQueryResult)
         {
-            return DateTime.UtcNow >= tokenDto.TokenExpTime;
+            return DateTime.UtcNow >= logInQueryResult.TokenExpTime;
         }
     }
 }

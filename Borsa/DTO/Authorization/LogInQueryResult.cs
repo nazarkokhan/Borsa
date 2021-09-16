@@ -3,9 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace Borsa.DTO.Authorization
 {
-    public class TokenDto
+    public class LogInQueryResult
     {
-        public TokenDto(string token, DateTime tokenExpTime, string refreshToken, DateTime refreshTokenExpTime)
+        public LogInQueryResult(
+            string token, 
+            DateTime tokenExpTime, 
+            string refreshToken, 
+            DateTime refreshTokenExpTime)
         {
             Token = token;
             TokenExpTime = tokenExpTime;
@@ -17,12 +21,12 @@ namespace Borsa.DTO.Authorization
         public string Token { get; }
         
         [JsonPropertyName("tokenExpTime")]
-        public DateTime TokenExpTime { get; set; }
+        public DateTime TokenExpTime { get; }
         
         [JsonPropertyName("refreshToken")]
         public string RefreshToken { get; }
         
         [JsonPropertyName("refreshTokenExpTime")]
-        public DateTime RefreshTokenExpTime { get; set; }
+        public DateTime RefreshTokenExpTime { get; }
     }
 }

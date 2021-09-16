@@ -5,8 +5,8 @@ namespace Borsa.Services.Abstract
 {
     public interface ITokenStorage
     {
-        Task<TokenDto> GetToken();
+        Task<LogInQueryResult> GetToken();
         
-        Task SaveToken(TokenDto tokenDto);
+        Task SaveToken(LogInQueryResult logInQueryResult);
     }
 }

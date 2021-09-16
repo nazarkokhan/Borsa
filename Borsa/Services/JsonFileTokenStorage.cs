@@ -12,41 +12,41 @@ namespace Borsa.Services
         private const string FileName = "tokenStorage.json";
 
         private readonly string _path;
-        private TokenDto _tokenDto;
+        private LogInQueryResult _logInQueryResult;
 
         public JsonFileTokenStorage()
         {
             _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName);
         }
 
-        public async Task<TokenDto> GetToken()
+        public async Task<LogInQueryResult> GetToken()
         {
-            if (_tokenDto is not null)
+            if (_logInQueryResult is not null)
             {
-                return _tokenDto;
+                return _logInQueryResult;
             }
 
             if (File.Exists(_path))
             {
-                return _tokenDto = JsonSerializer.Deserialize<TokenDto>(
+                return _logInQueryResult = JsonSerializer.Deserialize<LogInQueryResult>(
                     await File.ReadAllTextAsync(_path)
                 );
             }
 
-            await SaveToken(new TokenDto(
+            await SaveToken(new LogInQueryResult(
                 "DEFAULT_TOKEN",
                 DateTime.UnixEpoch,
                 "DEFAULT_REFRESH_TOKEN",
                 DateTime.UnixEpoch)
             );
 
-            return _tokenDto;
+            return _logInQueryResult;
         }
 
-        public async Task SaveToken(TokenDto tokenDto)
+        public async Task SaveToken(LogInQueryResult logInQueryResult)
         {
-            await File.WriteAllTextAsync(_path, JsonSerializer.Serialize(tokenDto));
-            _tokenDto = tokenDto;
+            await File.WriteAllTextAsync(_path, JsonSerializer.Serialize(logInQueryResult));
+            _logInQueryResult = logInQueryResult;
         }
     }
 }

@@ -21,20 +21,20 @@ namespace Borsa.Services
             _jsonFileTokenStorage = tokenStorage;
         }
 
-        public async Task<TokenDto> LogInAsync(LogInDto logInDto)
+        public async Task<LogInQueryResult> LogInAsync(LogInQuery logInQuery)
         {
-            var json = JsonSerializer.Serialize(logInDto);
+            var json = JsonSerializer.Serialize(logInQuery);
 
             var response = await _httpClient
                 .PostAsync(
-                    "Auth/token",
+                    "Auth/LogIn",
                     new StringContent(json, Encoding.UTF8, FileName.Json)
                 );
 
             response.EnsureSuccessStatusCode();
 
             var responseToken = JsonSerializer
-                .Deserialize<TokenDto>(
+                .Deserialize<LogInQueryResult>(
                     await response.Content.ReadAsStringAsync()
                 );
 
@@ -43,20 +43,20 @@ namespace Borsa.Services
             return responseToken;
         }
 
-        public async Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshToken)
+        public async Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken)
         {
             var json = JsonSerializer.Serialize(refreshToken);
 
             var response = await _httpClient
                 .PostAsync(
-                    "Auth/refresh-token",
+                    "Auth/RefreshToken",
                     new StringContent(json, Encoding.UTF8, FileName.Json)
                 );
 
             response.EnsureSuccessStatusCode();
 
             var responseToken = JsonSerializer
-                .Deserialize<TokenDto>(
+                .Deserialize<LogInQueryResult>(
                     await response.Content.ReadAsStringAsync()
                 );
 

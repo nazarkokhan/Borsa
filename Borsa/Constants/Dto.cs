@@ -8,18 +8,17 @@ namespace Borsa.Constants
 {
     public static class Dto
     {
-        public static LogInDto CreateUser()
+        public static LogInQuery CreateUser()
         {
-            return new(
+            return new LogInQuery(
                 LoginData.Email,
-                LoginData.Password,
-                new DeviceDto(Device.Token, Device.OperatingSystem)
+                LoginData.Password
             );
         }
 
         public static CreateAlertDto CreateAlert()
         {
-            return new(
+            return new CreateAlertDto(
                 conditions: new List<CreateConditionDto>
                 {
                     new CreateConditionDto

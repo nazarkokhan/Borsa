@@ -2,9 +2,9 @@
 
 namespace Borsa.DTO.Authorization
 {
-    public class RefreshTokenDto
+    public class RefreshTokenQuery
     {
-        public RefreshTokenDto(string refreshToken)
+        public RefreshTokenQuery(string refreshToken)
         {
             RefreshToken = refreshToken;
         }

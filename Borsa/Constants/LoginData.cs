@@ -4,6 +4,6 @@
     {
         public const string Email = "nazarkokhan@gmail.com";
 
-        public const string Password = "Password";
+        public const string Password = "string1234";
     }
 }

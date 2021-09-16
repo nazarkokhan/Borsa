@@ -5,7 +5,7 @@ namespace Borsa.Services.Abstract
 {
     public interface ILoginService
     {
-        public Task<TokenDto> LogInAsync(LogInDto logInDto);
-        public Task<TokenDto> RefreshTokenAsync(RefreshTokenDto refreshToken);
+        public Task<LogInQueryResult> LogInAsync(LogInQuery logInQuery);
+        public Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken);
     }
 }
