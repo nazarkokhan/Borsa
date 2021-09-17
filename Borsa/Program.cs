@@ -48,12 +48,12 @@
             var token = await logInService.LogInAsync(Dto.CreateUser());
 
             HubConnection = new HubConnectionBuilder()
-                .WithUrl(Api.BaseUrl + "/Chat",
+                .WithUrl(Api.BaseUrl + "/hubs/Chat",
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .Build();
 
             HubConnection.On<MessageDto>(
-                "Send",
+                "Chat",
                 (message) =>
                 {
                     Console.WriteLine(
@@ -66,19 +66,17 @@
 
             await HubConnection.StartAsync();
 
-            Console.WriteLine("WriteChatId");
-
-            var chatId = Console.ReadLine();
+            Console.WriteLine("Write message:");
 
             while (true)
             {
                 await HubConnection.SendAsync(
                     "SendMessage",
-                    chatId,
-                    Console.ReadLine(),
-                    CancellationToken.None
+                    1,
+                    Console.ReadLine()
                 );
             }
+            
             // ReSharper disable once FunctionNeverReturns
         }
     }
