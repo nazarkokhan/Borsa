@@ -3,9 +3,9 @@ using System.Text.Json.Serialization;
 
 namespace Borsa
 {
-    public class MessageDto
+    public class Message
     {
-        public MessageDto(
+        public Message(
             int chatId, 
             int userId, 
             string body, 

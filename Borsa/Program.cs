@@ -42,7 +42,7 @@
                 .AddHttpMessageHandler<AuthInterceptor>()
                 .Services
                 .BuildServiceProvider();
-            
+
             var logInService = provider.GetRequiredService<ILoginService>();
 
             var token = await logInService.LogInAsync(Dto.CreateUser());
@@ -52,31 +52,31 @@
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .Build();
 
-            HubConnection.On<MessageDto>(
-                "Chat",
+            HubConnection.On<Message>(
+                "ReceiveMessage",
                 (message) =>
                 {
                     Console.WriteLine(
                         $"UserId: {message.UserId} /// ChatId: {message.ChatId}\n" +
                         $"Message: {message.Body}\n" +
-                        $"CreatedDate: {message.CreatedDate}\n"
-                    );
-                }
-            );
+                        $"CreatedDate: {message.CreatedDate}\n");
+                });
 
             await HubConnection.StartAsync();
 
+            const int integerChatId = 5;
+            
             Console.WriteLine("Write message:");
 
             while (true)
             {
+                var stringYourMessage = Console.ReadLine();
                 await HubConnection.SendAsync(
                     "SendMessage",
-                    1,
-                    Console.ReadLine()
-                );
+                    integerChatId,
+                    stringYourMessage);
             }
-            
+
             // ReSharper disable once FunctionNeverReturns
         }
     }
