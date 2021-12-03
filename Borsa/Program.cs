@@ -64,17 +64,16 @@
 
             await HubConnection.StartAsync();
 
-            const int integerChatId = 5;
+            const int integerChatId = 9;
             
             Console.WriteLine("Write message:");
 
             while (true)
             {
-                var stringYourMessage = Console.ReadLine();
                 await HubConnection.SendAsync(
                     "SendMessage",
                     integerChatId,
-                    stringYourMessage);
+                    Console.ReadLine());
             }
 
             // ReSharper disable once FunctionNeverReturns

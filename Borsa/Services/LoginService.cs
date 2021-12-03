@@ -8,6 +8,8 @@ using Borsa.Services.Abstract;
 
 namespace Borsa.Services
 {
+    using System.Net;
+
     public class LoginService : ILoginService
     {
         private readonly HttpClient _httpClient;
@@ -50,15 +52,16 @@ namespace Borsa.Services
             var response = await _httpClient
                 .PostAsync(
                     "Auth/RefreshToken",
-                    new StringContent(json, Encoding.UTF8, FileName.Json)
-                );
+                    new StringContent(json, Encoding.UTF8, FileName.Json));
 
+            if (response.StatusCode == HttpStatusCode.BadRequest)
+                return null!;
+            
             response.EnsureSuccessStatusCode();
 
             var responseToken = JsonSerializer
                 .Deserialize<LogInQueryResult>(
-                    await response.Content.ReadAsStringAsync()
-                );
+                    await response.Content.ReadAsStringAsync());
 
             await _jsonFileTokenStorage.SaveToken(responseToken);
 
