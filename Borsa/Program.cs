@@ -13,6 +13,7 @@ namespace Borsa
     using System.Threading.Tasks;
     using Constants;
     using Constants.Url;
+    using DTO.Authorization;
     using Extensions;
     using Microsoft.AspNetCore.SignalR.Client;
     using Microsoft.Extensions.Configuration;
@@ -54,7 +55,9 @@ namespace Borsa
 
             var chatService = provider.GetRequiredService<IChatService>();
 
-            var token = await logInService.LogInAsync(Dto.CreateUser());
+            var token = await logInService.LogInAsync(new LogInQuery(
+                "superadmin@gmail.com",
+                "Admin123"));
 
             HubConnection = new HubConnectionBuilder()
                 .WithUrl(Api.BaseUrl + "hub",
