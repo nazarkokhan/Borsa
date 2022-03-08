@@ -67,21 +67,4 @@ public class LoginService : ILoginService
 
         return responseToken!;
     }
-
-    public async Task<ChatMember> GetMyProfile()
-    {
-        var response = await _httpClient
-            .GetAsync("User");
-
-        if (response.StatusCode == HttpStatusCode.BadRequest)
-            return null!;
-            
-        response.EnsureSuccessStatusCode();
-
-        var me = JsonSerializer
-            .Deserialize<ChatMember>(
-                await response.Content.ReadAsStringAsync());
-
-        return me!;
-    }
 }

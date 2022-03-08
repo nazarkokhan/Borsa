@@ -8,6 +8,4 @@ public interface ILoginService
     public Task<LogInQueryResult> LogInAsync(LogInQuery logInQuery);
     
     public Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken);
-    
-    public Task<ChatMember> GetMyProfile();
 }

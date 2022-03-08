@@ -36,16 +36,16 @@ namespace Borsa
             var provider = new ServiceCollection()
                 .AddScoped<ILoginService, LoginService>()
                 .AddSingleton<ITokenStorage, JsonFileTokenStorage>()
+                .AddSingleton<IChatService, ChatService>()
                 .AddScoped<AuthInterceptor>()
                 .AddSingleton<IConfiguration>(configuration)
                 .AddHttpClient(
                     nameof(LoginService),
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "/api"); }
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); }
                 )
                 .Services
-                .AddHttpClient(
-                    Client.AuthClient,
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "/api"); }
+                .AddHttpClient<IChatService, ChatService>(
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); }
                 )
                 .AddHttpMessageHandler<AuthInterceptor>()
                 .Services
@@ -56,15 +56,15 @@ namespace Borsa
             var chatService = provider.GetRequiredService<IChatService>();
 
             var token = await logInService.LogInAsync(new LogInQuery(
-                "superadmin@gmail.com",
-                "Admin123"));
+                "jeru2@mailforspam.com",
+                "qwe123"));
 
             HubConnection = new HubConnectionBuilder()
                 .WithUrl(Api.BaseUrl + "hub",
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .Build();
 
-            var me = await logInService.GetMyProfile();
+            var me = await chatService.GetMyProfile();
 
             var chats = new List<GetChatDto>();
 
@@ -131,10 +131,11 @@ namespace Borsa
                 });
 
             await HubConnection.StartAsync();
-
-            const int integerChatId = 9;
-
-            Console.WriteLine("Write message:");
+            
+            await HubConnection.SendAsync(
+                "SendNewMessage",
+                7,
+                "message text");
 
             while (true)
             {
@@ -149,10 +150,14 @@ namespace Borsa
                 switch (methodName)
                 {
                     case "New":
+                        Console.WriteLine("Write message:");
+                        var message = Console.ReadLine();
+                        Console.WriteLine("----------");
+
                         await HubConnection.SendAsync(
                             "SendNewMessage",
                             chatId,
-                            Console.ReadLine());
+                            message);
                         break;
 
                     case "Update":
@@ -164,7 +169,7 @@ namespace Borsa
 
                     case "Read":
                         await HubConnection.SendAsync(
-                            "SendNewMessage",
+                            "SendReadMessages",
                             chatId,
                             Console.ReadLine());
                         break;
