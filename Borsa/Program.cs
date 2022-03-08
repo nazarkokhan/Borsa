@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Borsa;
+
 // ReSharper disable All
 
 namespace Borsa
@@ -60,19 +62,39 @@ namespace Borsa
                 "ReceiveNewMessage",
                 (newMessage) =>
                 {
-                    var m = newMessage.ToDisplayMessageDto();
+                    var message = newMessage.ToMessage();
 
                     var consoleMessage = "New message\n";
 
-                    consoleMessage += $"{nameof(m.Id)}: {m.Id}\n" +
-                                      $"{nameof(m.Body)}: {m.Body}\n" +
-                                      $"{nameof(m.IsRead)}: {m.IsRead}\n" +
-                                      $"{nameof(m.CreatedDate)}: {m.CreatedDate}\n" +
-                                      $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
-                                      $"{nameof(m.ChatId)}: {m.ChatId}\n" +
-                                      $"{nameof(m.UserId)}: {m.UserId}\n";
+                    consoleMessage += message.ToDisplayText();
 
                     Console.WriteLine(consoleMessage);
+                });
+            
+            HubConnection.On<UpdateMessageDto>(
+                "ReceiveUpdateMessage",
+                (updateMessage) =>
+                {
+                    // var message = newMessage.ToMessage();
+                    //
+                    // var consoleMessage = "New message\n";
+                    //
+                    // consoleMessage += message.ToDisplayText();
+                    //
+                    // Console.WriteLine(consoleMessage);
+                });
+            
+            HubConnection.On<ReadByMessagesDto>(
+                "ReceiveReadByMessages",
+                (readByMessages) =>
+                {
+                    // var message = newMessage.ToMessage();
+                    //
+                    // var consoleMessage = "New message\n";
+                    //
+                    // consoleMessage += message.ToDisplayText();
+                    //
+                    // Console.WriteLine(consoleMessage);
                 });
 
             await HubConnection.StartAsync();
@@ -92,11 +114,26 @@ namespace Borsa
     }
 }
 
+public static class DisplayConsole
+{
+    public static string ToDisplayText(this Message m)
+    {
+        return $"{nameof(m.Id)}: {m.Id}\n" +
+               $"{nameof(m.Body)}: {m.Body}\n" +
+               $"{nameof(m.IsRead)}: {m.IsRead}\n" +
+               $"{nameof(m.CreatedDate)}: {m.CreatedDate}\n" +
+               $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
+               $"{nameof(m.ChatId)}: {m.ChatId}\n" +
+               $"{nameof(m.UserId)}: {m.UserId}\n";
+    }
+
+}
+
 public static class Mappers
 {
-    public static DisplayMessage ToDisplayMessageDto(this NewMessageDto newMessageDto)
+    public static Message ToMessage(this NewMessageDto newMessageDto)
     {
-        return newMessageDto.Map(m => new DisplayMessage(
+        return newMessageDto.Map(m => new Message(
             m.Id,
             m.Body,
             false,

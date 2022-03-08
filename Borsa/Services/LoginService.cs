@@ -40,9 +40,9 @@ public class LoginService : ILoginService
                 await response.Content.ReadAsStringAsync()
             );
 
-        await _jsonFileTokenStorage.SaveToken(responseToken);
+        await _jsonFileTokenStorage.SaveToken(responseToken!);
 
-        return responseToken;
+        return responseToken!;
     }
 
     public async Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken)
@@ -63,8 +63,25 @@ public class LoginService : ILoginService
             .Deserialize<LogInQueryResult>(
                 await response.Content.ReadAsStringAsync());
 
-        await _jsonFileTokenStorage.SaveToken(responseToken);
+        await _jsonFileTokenStorage.SaveToken(responseToken!);
 
-        return responseToken;
+        return responseToken!;
+    }
+
+    public async Task<ChatMember> GetMyProfile()
+    {
+        var response = await _httpClient
+            .GetAsync("User");
+
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+            return null!;
+            
+        response.EnsureSuccessStatusCode();
+
+        var me = JsonSerializer
+            .Deserialize<ChatMember>(
+                await response.Content.ReadAsStringAsync());
+
+        return me!;
     }
 }
