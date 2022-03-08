@@ -70,37 +70,37 @@ namespace Borsa
 
             HubConnection.On<NewMessageDto>(
                 "ReceiveNewMessage",
-                async (newMessage) =>
+                (newMessage) =>
                 {
                     var message = newMessage.ToMessage();
-
+            
                     var consoleMessage = "#####(New message)#####\n";
-
+            
                     var chat = chats.Find(c => c.Id == message.ChatId);
-
+            
                     if (chat is null)
                     {
-                        chat = await chatService.GetChat(message.ChatId, 10);
-
+                        chat =  chatService.GetChat(message.ChatId, 10).GetAwaiter().GetResult();
+            
                         if (chat is null)
                         {
-                            Console.WriteLine($"LOG ERROR: Chat with id:{message.ChatId} not found");
-
+                            Console.WriteLine($"LOG ERROR: Chat with id: {message.ChatId} not found");
+            
                             return;
                         }
-
+            
                         chats.Add(chat);
                     }
-
+            
                     var iAmOwner = message.UserId == me.Id;
-
+            
                     var messageOwner = iAmOwner
                         ? me
                         : chat.ChatMembers
                             .First(m => m.Id == message.UserId);
-
+            
                     consoleMessage += message.ToDisplayText(messageOwner, iAmOwner);
-
+            
                     Console.WriteLine(consoleMessage);
                 });
 
@@ -116,7 +116,7 @@ namespace Borsa
                     //
                     // Console.WriteLine(consoleMessage);
                 });
-
+            
             HubConnection.On<ReadByMessagesDto>(
                 "ReceiveReadByMessages",
                 (readByMessages) =>
@@ -131,11 +131,6 @@ namespace Borsa
                 });
 
             await HubConnection.StartAsync();
-            
-            await HubConnection.SendAsync(
-                "SendNewMessage",
-                7,
-                "message text");
 
             while (true)
             {

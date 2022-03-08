@@ -1,21 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 public record NewMessageDto(
-    Guid Id,
-    string Body,
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("createdDate")]
     DateTime CreatedDate,
-    int ChatId,
-    int UserId);
-    
+    [property: JsonPropertyName("chatId")] int ChatId,
+    [property: JsonPropertyName("userId")] int UserId);
+
 public record UpdateMessageDto(
-    Guid Id,
-    string Body,
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("changedDate")]
     DateTime ChangedDate,
-    int ChatId,
-    int UserId);
+    [property: JsonPropertyName("chatId")] int ChatId,
+    [property: JsonPropertyName("userId")] int UserId);
 
 public record ReadByMessagesDto(
+    [property: JsonPropertyName("messageIds")]
     ICollection<Guid> MessageIds,
-    int ChatId,
-    int UserId);
+    [property: JsonPropertyName("chatId")] int ChatId,
+    [property: JsonPropertyName("userId")] int UserId);

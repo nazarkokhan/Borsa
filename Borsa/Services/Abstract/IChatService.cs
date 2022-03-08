@@ -46,7 +46,7 @@ public class ChatService : IChatService
     public async Task<GetChatDto> GetChat(int id, int messagesCount)
     {
         var response = await _httpClient
-            .GetAsync($"ChatV2?{nameof(id)}={id}&{nameof(messagesCount)}=?{messagesCount}");
+            .GetAsync($"ChatV2?{nameof(id)}={id}&{nameof(messagesCount)}={messagesCount}");
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
             return null!;
