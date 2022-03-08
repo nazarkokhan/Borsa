@@ -1,10 +1,9 @@
-﻿namespace Borsa.DTO.Enums
+﻿namespace Borsa.DTO.Enums;
+
+public enum CompareType
 {
-    public enum CompareType
-    {
-        BiggerThenOrEqual, 
-        LessThenOrEqual, 
-        BiggerThen, 
-        LessThen
-    }
+    BiggerThenOrEqual, 
+    LessThenOrEqual, 
+    BiggerThen, 
+    LessThen
 }

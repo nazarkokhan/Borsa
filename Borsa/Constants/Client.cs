@@ -1,7 +1,6 @@
-﻿namespace Borsa.Constants
+﻿namespace Borsa.Constants;
+
+public static class Client
 {
-    public static class Client
-    {
-        public const string AuthClient = "AuthClient";
-    }
+    public const string AuthClient = "AuthClient";
 }

@@ -1,8 +1,7 @@
-﻿namespace Borsa.DTO.Enums
+﻿namespace Borsa.DTO.Enums;
+
+public enum BuySell
 {
-    public enum BuySell
-    {
-        Buy,
-        Sell
-    }
+    Buy,
+    Sell
 }

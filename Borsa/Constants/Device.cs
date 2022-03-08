@@ -1,9 +1,8 @@
-﻿namespace Borsa.Constants
+﻿namespace Borsa.Constants;
+
+public static class Device
 {
-    public static class Device
-    {
-        public const string OperatingSystem = "IOS";
+    public const string OperatingSystem = "IOS";
         
-        public const string Token = "RandomDeviceToken";
-    }
+    public const string Token = "RandomDeviceToken";
 }

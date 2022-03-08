@@ -4,12 +4,11 @@ using Borsa.DTO.Alert;
 using Borsa.DTO.Alert.Create;
 using Borsa.DTO.Enums;
 
-namespace Borsa.Services.Abstract
+namespace Borsa.Services.Abstract;
+
+public interface IAlertService
 {
-    public interface IAlertService
-    {
-        Task<Pager<AlertDto>> GetAlert(int page, int items, ActivityStatus? status = null, string search = null);
+    Task<Pager<AlertDto>> GetAlert(int page, int items, ActivityStatus? status = null, string search = null);
         
-        Task<AlertDto> CreateAlert(CreateAlertDto alertDto);
-    }
+    Task<AlertDto> CreateAlert(CreateAlertDto alertDto);
 }

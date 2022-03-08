@@ -6,37 +6,36 @@ using Borsa.DTO;
 using Borsa.DTO.Alert;
 using Borsa.Services.Abstract;
 
-namespace Borsa.Services
+namespace Borsa.Services;
+
+public class InstrumentService : IInstrumentService
 {
-    public class InstrumentService : IInstrumentService
+    private readonly HttpClient _httpClient;
+
+    public InstrumentService(IHttpClientFactory httpClientFactory)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClientFactory.CreateClient(Client.AuthClient);
+    }
 
-        public InstrumentService(IHttpClientFactory httpClientFactory)
-        {
-            _httpClient = httpClientFactory.CreateClient(Client.AuthClient);
-        }
+    public async Task<Pager<InstrumentDto>> GetInstrument(int page, int items, 
+        string search = null, string orderType = null, string country = null)
+    {
+        var urn = $"Instrument/{page}/{items}";
 
-        public async Task<Pager<InstrumentDto>> GetInstrument(int page, int items, 
-            string search = null, string orderType = null, string country = null)
-        {
-            var urn = $"Instrument/{page}/{items}";
-
-            if (!string.IsNullOrWhiteSpace(search))
-                urn += $"?{nameof(search)}={search}";
+        if (!string.IsNullOrWhiteSpace(search))
+            urn += $"?{nameof(search)}={search}";
             
-            if (!string.IsNullOrWhiteSpace(orderType))
-                urn += $"?{nameof(orderType)}={orderType}";
+        if (!string.IsNullOrWhiteSpace(orderType))
+            urn += $"?{nameof(orderType)}={orderType}";
             
-            if (!string.IsNullOrWhiteSpace(country))
-                urn += $"?{nameof(country)}={country}";
+        if (!string.IsNullOrWhiteSpace(country))
+            urn += $"?{nameof(country)}={country}";
             
-            var response = 
-                await _httpClient.GetAsync(urn);
+        var response = 
+            await _httpClient.GetAsync(urn);
 
-            response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode();
 
-            return JsonSerializer.Deserialize<Pager<InstrumentDto>>(await response.Content.ReadAsStringAsync());
-        }
+        return JsonSerializer.Deserialize<Pager<InstrumentDto>>(await response.Content.ReadAsStringAsync());
     }
 }

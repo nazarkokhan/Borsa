@@ -1,4 +1,8 @@
-﻿namespace Borsa
+﻿using System;
+using System.Collections.Generic;
+// ReSharper disable All
+
+namespace Borsa
 {
     using System;
     using System.IO;
@@ -32,12 +36,12 @@
                 .AddSingleton<IConfiguration>(configuration)
                 .AddHttpClient(
                     nameof(LoginService),
-                    client => { client.BaseAddress = new Uri(configuration.GetApiBaseUrl()); }
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "/api"); }
                 )
                 .Services
                 .AddHttpClient(
                     Client.AuthClient,
-                    client => { client.BaseAddress = new Uri(configuration.GetApiBaseUrl()); }
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "/api"); }
                 )
                 .AddHttpMessageHandler<AuthInterceptor>()
                 .Services
@@ -48,24 +52,33 @@
             var token = await logInService.LogInAsync(Dto.CreateUser());
 
             HubConnection = new HubConnectionBuilder()
-                .WithUrl(Api.BaseUrl + "/hubs/Chat",
+                .WithUrl(Api.BaseUrl + "hub",
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .Build();
 
-            HubConnection.On<Message>(
-                "ReceiveMessage",
-                (message) =>
+            HubConnection.On<NewMessageDto>(
+                "ReceiveNewMessage",
+                (newMessage) =>
                 {
-                    Console.WriteLine(
-                        $"UserId: {message.UserId} /// ChatId: {message.ChatId}\n" +
-                        $"Message: {message.Body}\n" +
-                        $"CreatedDate: {message.CreatedDate}\n");
+                    var m = newMessage.ToDisplayMessageDto();
+
+                    var consoleMessage = "New message\n";
+
+                    consoleMessage += $"{nameof(m.Id)}: {m.Id}\n" +
+                                      $"{nameof(m.Body)}: {m.Body}\n" +
+                                      $"{nameof(m.IsRead)}: {m.IsRead}\n" +
+                                      $"{nameof(m.CreatedDate)}: {m.CreatedDate}\n" +
+                                      $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
+                                      $"{nameof(m.ChatId)}: {m.ChatId}\n" +
+                                      $"{nameof(m.UserId)}: {m.UserId}\n";
+
+                    Console.WriteLine(consoleMessage);
                 });
 
             await HubConnection.StartAsync();
 
             const int integerChatId = 9;
-            
+
             Console.WriteLine("Write message:");
 
             while (true)
@@ -75,8 +88,24 @@
                     integerChatId,
                     Console.ReadLine());
             }
-
-            // ReSharper disable once FunctionNeverReturns
         }
     }
+}
+
+public static class Mappers
+{
+    public static DisplayMessage ToDisplayMessageDto(this NewMessageDto newMessageDto)
+    {
+        return newMessageDto.Map(m => new DisplayMessage(
+            m.Id,
+            m.Body,
+            false,
+            m.CreatedDate,
+            null,
+            m.ChatId,
+            m.UserId));
+    }
+
+    public static TResult Map<TSource, TResult>(this TSource source, Func<TSource, TResult> func)
+        => func.Invoke(source);
 }

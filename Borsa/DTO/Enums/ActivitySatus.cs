@@ -1,8 +1,7 @@
-﻿namespace Borsa.DTO.Enums
+﻿namespace Borsa.DTO.Enums;
+
+public enum ActivityStatus
 {
-    public enum ActivityStatus
-    {
-        Active,
-        Inactive
-    }
+    Active,
+    Inactive
 }

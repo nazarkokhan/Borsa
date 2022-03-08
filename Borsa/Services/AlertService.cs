@@ -10,58 +10,57 @@ using Borsa.DTO.Alert.Create;
 using Borsa.DTO.Enums;
 using Borsa.Services.Abstract;
 
-namespace Borsa.Services
+namespace Borsa.Services;
+
+public class AlertService : IAlertService
 {
-    public class AlertService : IAlertService
+    private readonly HttpClient _httpClient;
+
+    public AlertService(IHttpClientFactory httpClientFactory)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClientFactory.CreateClient(Client.AuthClient);
+    }
 
-        public AlertService(IHttpClientFactory httpClientFactory)
+    public async Task<Pager<AlertDto>> GetAlert(int page, int items,
+        ActivityStatus? status = null, string search = null)
+    {
+        var urn = $"Alert/{page}/{items}";
+
+        if (status is not null)
+            urn += $"?{nameof(status)}={status.ToString()}";
+
+        if (!string.IsNullOrWhiteSpace(search))
+            urn += $"?{nameof(search)}={search}";
+
+        var response =
+            await _httpClient.GetAsync(urn);
+
+        response.EnsureSuccessStatusCode();
+
+        var responseString = await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<Pager<AlertDto>>(responseString, new JsonSerializerOptions
         {
-            _httpClient = httpClientFactory.CreateClient(Client.AuthClient);
-        }
+            Converters = {new JsonStringEnumConverter()}
+        });
+    }
 
-        public async Task<Pager<AlertDto>> GetAlert(int page, int items,
-            ActivityStatus? status = null, string search = null)
-        {
-            var urn = $"Alert/{page}/{items}";
+    public async Task<AlertDto> CreateAlert(CreateAlertDto alertDto)
+    {
+        var json = JsonSerializer.Serialize(alertDto);
 
-            if (status is not null)
-                urn += $"?{nameof(status)}={status.ToString()}";
-
-            if (!string.IsNullOrWhiteSpace(search))
-                urn += $"?{nameof(search)}={search}";
-
-            var response =
-                await _httpClient.GetAsync(urn);
-
-            response.EnsureSuccessStatusCode();
-
-            var responseString = await response.Content.ReadAsStringAsync();
-
-            return JsonSerializer.Deserialize<Pager<AlertDto>>(responseString, new JsonSerializerOptions
-            {
-                Converters = {new JsonStringEnumConverter()}
-            });
-        }
-
-        public async Task<AlertDto> CreateAlert(CreateAlertDto alertDto)
-        {
-            var json = JsonSerializer.Serialize(alertDto);
-
-            var response = await _httpClient
-                .PostAsync(
-                    "Alert",
-                    new StringContent(json, Encoding.UTF8, "application/json")
-                );
-
-            response.EnsureSuccessStatusCode();
-
-            var responseString = await response.Content.ReadAsStringAsync();
-
-            return JsonSerializer.Deserialize<AlertDto>(responseString,
-                new JsonSerializerOptions {Converters = {new JsonStringEnumConverter()}}
+        var response = await _httpClient
+            .PostAsync(
+                "Alert",
+                new StringContent(json, Encoding.UTF8, "application/json")
             );
-        }
+
+        response.EnsureSuccessStatusCode();
+
+        var responseString = await response.Content.ReadAsStringAsync();
+
+        return JsonSerializer.Deserialize<AlertDto>(responseString,
+            new JsonSerializerOptions {Converters = {new JsonStringEnumConverter()}}
+        );
     }
 }

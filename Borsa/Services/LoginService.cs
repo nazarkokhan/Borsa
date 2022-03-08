@@ -6,66 +6,65 @@ using Borsa.Constants;
 using Borsa.DTO.Authorization;
 using Borsa.Services.Abstract;
 
-namespace Borsa.Services
+namespace Borsa.Services;
+
+using System.Net;
+
+public class LoginService : ILoginService
 {
-    using System.Net;
+    private readonly HttpClient _httpClient;
 
-    public class LoginService : ILoginService
+    private readonly ITokenStorage _jsonFileTokenStorage;
+
+    public LoginService(IHttpClientFactory httpClientFactory, ITokenStorage tokenStorage)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClientFactory.CreateClient(nameof(LoginService));
 
-        private readonly ITokenStorage _jsonFileTokenStorage;
+        _jsonFileTokenStorage = tokenStorage;
+    }
 
-        public LoginService(IHttpClientFactory httpClientFactory, ITokenStorage tokenStorage)
-        {
-            _httpClient = httpClientFactory.CreateClient(nameof(LoginService));
+    public async Task<LogInQueryResult> LogInAsync(LogInQuery logInQuery)
+    {
+        var json = JsonSerializer.Serialize(logInQuery);
 
-            _jsonFileTokenStorage = tokenStorage;
-        }
+        var response = await _httpClient
+            .PostAsync(
+                "Auth/LogIn",
+                new StringContent(json, Encoding.UTF8, FileName.Json)
+            );
 
-        public async Task<LogInQueryResult> LogInAsync(LogInQuery logInQuery)
-        {
-            var json = JsonSerializer.Serialize(logInQuery);
+        response.EnsureSuccessStatusCode();
 
-            var response = await _httpClient
-                .PostAsync(
-                    "Auth/LogIn",
-                    new StringContent(json, Encoding.UTF8, FileName.Json)
-                );
+        var responseToken = JsonSerializer
+            .Deserialize<LogInQueryResult>(
+                await response.Content.ReadAsStringAsync()
+            );
 
-            response.EnsureSuccessStatusCode();
+        await _jsonFileTokenStorage.SaveToken(responseToken);
 
-            var responseToken = JsonSerializer
-                .Deserialize<LogInQueryResult>(
-                    await response.Content.ReadAsStringAsync()
-                );
+        return responseToken;
+    }
 
-            await _jsonFileTokenStorage.SaveToken(responseToken);
+    public async Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken)
+    {
+        var json = JsonSerializer.Serialize(refreshToken);
 
-            return responseToken;
-        }
+        var response = await _httpClient
+            .PostAsync(
+                "Auth/RefreshToken",
+                new StringContent(json, Encoding.UTF8, FileName.Json));
 
-        public async Task<LogInQueryResult> RefreshTokenAsync(RefreshTokenQuery refreshToken)
-        {
-            var json = JsonSerializer.Serialize(refreshToken);
-
-            var response = await _httpClient
-                .PostAsync(
-                    "Auth/RefreshToken",
-                    new StringContent(json, Encoding.UTF8, FileName.Json));
-
-            if (response.StatusCode == HttpStatusCode.BadRequest)
-                return null!;
+        if (response.StatusCode == HttpStatusCode.BadRequest)
+            return null!;
             
-            response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode();
 
-            var responseToken = JsonSerializer
-                .Deserialize<LogInQueryResult>(
-                    await response.Content.ReadAsStringAsync());
+        var responseToken = JsonSerializer
+            .Deserialize<LogInQueryResult>(
+                await response.Content.ReadAsStringAsync());
 
-            await _jsonFileTokenStorage.SaveToken(responseToken);
+        await _jsonFileTokenStorage.SaveToken(responseToken);
 
-            return responseToken;
-        }
+        return responseToken;
     }
 }

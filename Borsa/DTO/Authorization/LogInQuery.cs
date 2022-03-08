@@ -1,17 +1,16 @@
-﻿namespace Borsa.DTO.Authorization
+﻿namespace Borsa.DTO.Authorization;
+
+public class LogInQuery
 {
-    public class LogInQuery
+    public LogInQuery(
+        string email, 
+        string password)
     {
-        public LogInQuery(
-            string email, 
-            string password)
-        {
-            Email = email;
-            Password = password;
-        }
-
-        public string Email { get; }
-
-        public string Password { get; }
+        Email = email;
+        Password = password;
     }
+
+    public string Email { get; }
+
+    public string Password { get; }
 }

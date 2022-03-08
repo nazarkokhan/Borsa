@@ -1,9 +1,8 @@
-﻿namespace Borsa.DTO.Enums
+﻿namespace Borsa.DTO.Enums;
+
+public enum IndicatorType
 {
-    public enum IndicatorType
-    {
-        Price,
-        Volume,
-        Number
-    }
+    Price,
+    Volume,
+    Number
 }
