@@ -8,6 +8,7 @@ namespace Borsa
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Constants;
@@ -51,6 +52,8 @@ namespace Borsa
 
             var logInService = provider.GetRequiredService<ILoginService>();
 
+            var chatService = provider.GetRequiredService<IChatService>();
+
             var token = await logInService.LogInAsync(Dto.CreateUser());
 
             HubConnection = new HubConnectionBuilder()
@@ -58,19 +61,46 @@ namespace Borsa
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .Build();
 
+            var me = await logInService.GetMyProfile();
+
+            var chats = new List<GetChatDto>();
+
             HubConnection.On<NewMessageDto>(
                 "ReceiveNewMessage",
-                (newMessage) =>
+                async (newMessage) =>
                 {
                     var message = newMessage.ToMessage();
 
-                    var consoleMessage = "New message\n";
+                    var consoleMessage = "#####(New message)#####\n";
 
-                    consoleMessage += message.ToDisplayText();
+                    var chat = chats.Find(c => c.Id == message.ChatId);
+
+                    if (chat is null)
+                    {
+                        chat = await chatService.GetChat(message.ChatId, 10);
+
+                        if (chat is null)
+                        {
+                            Console.WriteLine($"LOG ERROR: Chat with id:{message.ChatId} not found");
+
+                            return;
+                        }
+
+                        chats.Add(chat);
+                    }
+
+                    var iAmOwner = message.UserId == me.Id;
+
+                    var messageOwner = iAmOwner
+                        ? me
+                        : chat.ChatMembers
+                            .First(m => m.Id == message.UserId);
+
+                    consoleMessage += message.ToDisplayText(messageOwner, iAmOwner);
 
                     Console.WriteLine(consoleMessage);
                 });
-            
+
             HubConnection.On<UpdateMessageDto>(
                 "ReceiveUpdateMessage",
                 (updateMessage) =>
@@ -83,7 +113,7 @@ namespace Borsa
                     //
                     // Console.WriteLine(consoleMessage);
                 });
-            
+
             HubConnection.On<ReadByMessagesDto>(
                 "ReceiveReadByMessages",
                 (readByMessages) =>
@@ -105,10 +135,40 @@ namespace Borsa
 
             while (true)
             {
-                await HubConnection.SendAsync(
-                    "SendMessage",
-                    integerChatId,
-                    Console.ReadLine());
+                Console.WriteLine("Action type:");
+                var methodName = Console.ReadLine();
+                Console.WriteLine("----------");
+                
+                Console.WriteLine("ChatId:");
+                var chatId = int.Parse(Console.ReadLine()!);
+                Console.WriteLine("----------");
+                
+                switch (methodName)
+                {
+                    case "New":
+                        await HubConnection.SendAsync(
+                            "SendNewMessage",
+                            chatId,
+                            Console.ReadLine());
+                        break;
+
+                    case "Update":
+                        await HubConnection.SendAsync(
+                            "SendUpdateMessage",
+                            chatId,
+                            Console.ReadLine());
+                        break;
+
+                    case "Read":
+                        await HubConnection.SendAsync(
+                            "SendNewMessage",
+                            chatId,
+                            Console.ReadLine());
+                        break;
+
+                    default:
+                        break;
+                }
             }
         }
     }
@@ -116,17 +176,28 @@ namespace Borsa
 
 public static class DisplayConsole
 {
-    public static string ToDisplayText(this Message m)
+    public static string ToDisplayText(this ChatMember m, bool iAmOwner)
     {
-        return $"{nameof(m.Id)}: {m.Id}\n" +
+        return $"--{nameof(iAmOwner).ToUpper()}: {iAmOwner}\n" +
+               $"-{nameof(m.Id)}: {m.Id}\n" +
+               $"-{nameof(m.FirstName)}: {m.FirstName}\n" +
+               $"-{nameof(m.LastName)}: {m.LastName}\n" +
+               $"-{nameof(m.Role)}: {m.Role}\n";
+    }
+
+    public static string ToDisplayText(this Message m, ChatMember messageOwner, bool iAmOwner)
+    {
+        return "----------------------------\n" +
+               $"Message owner:\n {messageOwner.ToDisplayText(iAmOwner)}\n" +
+               $"{nameof(m.Id)}: {m.Id}\n" +
                $"{nameof(m.Body)}: {m.Body}\n" +
                $"{nameof(m.IsRead)}: {m.IsRead}\n" +
                $"{nameof(m.CreatedDate)}: {m.CreatedDate}\n" +
                $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
                $"{nameof(m.ChatId)}: {m.ChatId}\n" +
-               $"{nameof(m.UserId)}: {m.UserId}\n";
+               $"{nameof(m.UserId)}: {m.UserId}\n" +
+               "----------------------------\n";
     }
-
 }
 
 public static class Mappers
