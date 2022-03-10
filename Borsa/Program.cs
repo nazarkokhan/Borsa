@@ -56,8 +56,8 @@ namespace Borsa
             var chatService = provider.GetRequiredService<IChatService>();
 
             var token = await logInService.LogInAsync(new LogInQuery(
-                "jeru2@mailforspam.com",
-                "qwe123"));
+                "superadmin@gmail.com",
+                "Admin123"));
 
             HubConnection = new HubConnectionBuilder()
                 .WithUrl(Api.BaseUrl + "hub",
@@ -70,37 +70,37 @@ namespace Borsa
 
             HubConnection.On<NewMessageDto>(
                 "ReceiveNewMessage",
-                (newMessage) =>
+                async (newMessage) =>
                 {
                     var message = newMessage.ToMessage();
-            
+
                     var consoleMessage = "#####(New message)#####\n";
-            
+
                     var chat = chats.Find(c => c.Id == message.ChatId);
-            
+
                     if (chat is null)
                     {
-                        chat =  chatService.GetChat(message.ChatId, 10).GetAwaiter().GetResult();
-            
+                        chat = await chatService.GetChat(message.ChatId, 10);
+
                         if (chat is null)
                         {
                             Console.WriteLine($"LOG ERROR: Chat with id: {message.ChatId} not found");
-            
+
                             return;
                         }
-            
+
                         chats.Add(chat);
                     }
-            
+
                     var iAmOwner = message.UserId == me.Id;
-            
+
                     var messageOwner = iAmOwner
                         ? me
                         : chat.ChatMembers
                             .First(m => m.Id == message.UserId);
-            
+
                     consoleMessage += message.ToDisplayText(messageOwner, iAmOwner);
-            
+
                     Console.WriteLine(consoleMessage);
                 });
 
@@ -116,7 +116,7 @@ namespace Borsa
                     //
                     // Console.WriteLine(consoleMessage);
                 });
-            
+
             HubConnection.On<ReadByMessagesDto>(
                 "ReceiveReadByMessages",
                 (readByMessages) =>
@@ -137,16 +137,17 @@ namespace Borsa
                 Console.WriteLine("Action type:");
                 var methodName = Console.ReadLine();
                 Console.WriteLine("----------");
-                
+
                 Console.WriteLine("ChatId:");
                 var chatId = int.Parse(Console.ReadLine()!);
                 Console.WriteLine("----------");
-                
+
+                string? message;
                 switch (methodName)
                 {
                     case "New":
                         Console.WriteLine("Write message:");
-                        var message = Console.ReadLine();
+                        message = Console.ReadLine();
                         Console.WriteLine("----------");
 
                         await HubConnection.SendAsync(
@@ -156,22 +157,38 @@ namespace Borsa
                         break;
 
                     case "Update":
+                        Console.WriteLine("Write message id:");
+                        var messageId = Guid.Parse(Console.ReadLine()!);
+                        Console.WriteLine("----------");
+
+                        Console.WriteLine("Write message:");
+                        message = Console.ReadLine();
+                        Console.WriteLine("----------");
+
                         await HubConnection.SendAsync(
                             "SendUpdateMessage",
                             chatId,
-                            Console.ReadLine());
+                            messageId,
+                            message);
                         break;
 
                     case "Read":
+                        var messageIds = Console.ReadLine()!
+                            .Split(", ")
+                            .Select(id => Guid.Parse(id))
+                            .ToList();
+
                         await HubConnection.SendAsync(
                             "SendReadMessages",
                             chatId,
-                            Console.ReadLine());
+                            messageIds);
                         break;
 
                     default:
                         break;
                 }
+
+                await Task.Delay(300);
             }
         }
     }
