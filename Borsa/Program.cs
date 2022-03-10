@@ -149,6 +149,9 @@ namespace Borsa
                     //
                     // consoleMessage += message.ToDisplayText();
                     //
+                    
+                    Console.Clear();
+
                     var reads = readByMessages.MessageIds
                         .Select(id => id.ToString())
                         .JoinToSingle("\n_-_: ");
