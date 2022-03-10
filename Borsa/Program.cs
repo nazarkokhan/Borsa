@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Borsa;
 
 // ReSharper disable All
@@ -74,13 +75,11 @@ namespace Borsa
                 {
                     var message = newMessage.ToMessage();
 
-                    var consoleMessage = "#####(New message)#####\n";
-
-                    var chat = chats.Find(c => c.Id == message.ChatId);
+                    var chat = chats.FirstOrDefault(c => c.Id == message.ChatId);
 
                     if (chat is null)
                     {
-                        chat = await chatService.GetChat(message.ChatId, 10);
+                        chat = await chatService.GetChat(message.ChatId, 1000);
 
                         if (chat is null)
                         {
@@ -92,29 +91,52 @@ namespace Borsa
                         chats.Add(chat);
                     }
 
-                    var iAmOwner = message.UserId == me.Id;
+                    chat.Messages.Add(message);
 
-                    var messageOwner = iAmOwner
-                        ? me
-                        : chat.ChatMembers
-                            .First(m => m.Id == message.UserId);
+                    Console.Clear();
 
-                    consoleMessage += message.ToDisplayText(messageOwner, iAmOwner);
+                    Console.WriteLine(chat.ToDisplayText(me.Id));
 
-                    Console.WriteLine(consoleMessage);
+                    Console.WriteLine($"#####(New message. Id: {newMessage.Id})#####\n");
                 });
 
             HubConnection.On<UpdateMessageDto>(
                 "ReceiveUpdateMessage",
                 (updateMessage) =>
                 {
-                    // var message = newMessage.ToMessage();
-                    //
-                    // var consoleMessage = "New message\n";
-                    //
-                    // consoleMessage += message.ToDisplayText();
-                    //
-                    // Console.WriteLine(consoleMessage);
+                    var chat = chats.First(c => c.Id == updateMessage.ChatId);
+
+                    if (chat is null)
+                    {
+                        Console.WriteLine("___________________");
+                        Console.WriteLine("CHAT FOR UPDATE MESSAGE NOT FOUND");
+                        Console.WriteLine("___________________");
+
+                        return;
+                    }
+
+                    var message = chat.Messages
+                        .First(m => m.Id == updateMessage.Id &&
+                                    m.UserId == updateMessage.UserId);
+
+                    message = new Message(
+                        message.Id,
+                        updateMessage.Body,
+                        message.IsRead,
+                        message.CreatedDate,
+                        updateMessage.ChangedDate,
+                        updateMessage.ChatId,
+                        updateMessage.UserId);
+
+                    chat.Messages.RemoveAll(x => x.Id == message.Id);
+
+                    chat.Messages.Add(message);
+
+                    Console.Clear();
+
+                    Console.WriteLine(chat.ToDisplayText(me.Id));
+
+                    Console.WriteLine($"#####(Updated message. Id: {updateMessage.Id})#####\n");
                 });
 
             HubConnection.On<ReadByMessagesDto>(
@@ -127,7 +149,11 @@ namespace Borsa
                     //
                     // consoleMessage += message.ToDisplayText();
                     //
-                    // Console.WriteLine(consoleMessage);
+                    var reads = readByMessages.MessageIds
+                        .Select(id => id.ToString())
+                        .JoinToSingle("\n_-_: ");
+
+                    Console.WriteLine($"#####(Read by messages. Ids:\n {reads})#####\n");
                 });
 
             await HubConnection.StartAsync();
@@ -188,7 +214,7 @@ namespace Borsa
                         break;
                 }
 
-                await Task.Delay(300);
+                await Task.Delay(TimeSpan.FromSeconds(5));
             }
         }
     }
@@ -196,18 +222,50 @@ namespace Borsa
 
 public static class DisplayConsole
 {
+    public static string ToDisplayText(this GetChatDto c, int meId)
+    {
+        var chat = "______________CHAT_______________\n" +
+                   $"-{nameof(c.Id)}: {c.Id}\n" +
+                   $"-{nameof(c.CreatedDate)}: {c.CreatedDate}\n" +
+                   $"-{nameof(c.LastActionDate)}: {c.LastActionDate}\n" +
+                   $"-{nameof(c.UnreadCount)}: {c.UnreadCount}\n" +
+                   "______________CHAT_______________\n";
+
+        var members = c.ChatMembers
+            .OrderByDescending(m => m.Id == meId)
+            .Select(m => m.ToDisplayText(m.Id == meId))
+            .JoinToSingle("\n");
+
+        var messages = c.Messages
+            .Select(m => m.ToDisplayText(
+                c.ChatMembers
+                    .First(cm => cm.Id == m.UserId),
+                m.UserId == meId))
+            .JoinToSingle("\n");
+
+        return $"________START________\n\n" +
+               $"{chat}\n" +
+               $"_______\n" +
+               $"{members}\n" +
+               $"_______\n" +
+               $"{messages}\n" +
+               $"________END________\n\n";
+    }
+
     public static string ToDisplayText(this ChatMember m, bool iAmOwner)
     {
-        return $"--{nameof(iAmOwner).ToUpper()}: {iAmOwner}\n" +
+        return "______________MEMBER_______________\n" +
+               $"--IT IS ME: {iAmOwner}\n" +
                $"-{nameof(m.Id)}: {m.Id}\n" +
                $"-{nameof(m.FirstName)}: {m.FirstName}\n" +
                $"-{nameof(m.LastName)}: {m.LastName}\n" +
-               $"-{nameof(m.Role)}: {m.Role}\n";
+               $"-{nameof(m.Role)}: {m.Role}\n" +
+               "______________MEMBER________________\n";
     }
 
     public static string ToDisplayText(this Message m, ChatMember messageOwner, bool iAmOwner)
     {
-        return "----------------------------\n" +
+        return "______________MESSAGE_______________\n" +
                $"Message owner:\n {messageOwner.ToDisplayText(iAmOwner)}\n" +
                $"{nameof(m.Id)}: {m.Id}\n" +
                $"{nameof(m.Body)}: {m.Body}\n" +
@@ -216,7 +274,7 @@ public static class DisplayConsole
                $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
                $"{nameof(m.ChatId)}: {m.ChatId}\n" +
                $"{nameof(m.UserId)}: {m.UserId}\n" +
-               "----------------------------\n";
+               "______________MESSAGE_______________\n";
     }
 }
 
@@ -236,4 +294,7 @@ public static class Mappers
 
     public static TResult Map<TSource, TResult>(this TSource source, Func<TSource, TResult> func)
         => func.Invoke(source);
+
+    public static string JoinToSingle(this IEnumerable<string> strings, string separator)
+        => string.Join(separator, strings);
 }
