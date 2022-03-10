@@ -63,6 +63,7 @@ namespace Borsa
             HubConnection = new HubConnectionBuilder()
                 .WithUrl(Api.BaseUrl + "hub",
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
+                .WithAutomaticReconnect()
                 .Build();
 
             var me = await chatService.GetMyProfile();
@@ -74,29 +75,31 @@ namespace Borsa
                 async (newMessage) =>
                 {
                     var message = newMessage.ToMessage();
-
+            
                     var chat = chats.FirstOrDefault(c => c.Id == message.ChatId);
-
+            
                     if (chat is null)
                     {
-                        chat = await chatService.GetChat(message.ChatId, 1000);
-
+                        chat = await chatService.GetChat(message.ChatId, 3);
+            
                         if (chat is null)
                         {
                             Console.WriteLine($"LOG ERROR: Chat with id: {message.ChatId} not found");
-
+            
                             return;
                         }
-
+            
+                        chat.ChatMembers.Add(me);
+            
                         chats.Add(chat);
                     }
-
+            
                     chat.Messages.Add(message);
-
+            
                     Console.Clear();
-
+            
                     Console.WriteLine(chat.ToDisplayText(me.Id));
-
+            
                     Console.WriteLine($"#####(New message. Id: {newMessage.Id})#####\n");
                 });
 
@@ -149,7 +152,7 @@ namespace Borsa
                     //
                     // consoleMessage += message.ToDisplayText();
                     //
-                    
+
                     Console.Clear();
 
                     var reads = readByMessages.MessageIds
@@ -214,6 +217,7 @@ namespace Borsa
                         break;
 
                     default:
+                        Console.WriteLine("WRONG METHOD");
                         break;
                 }
 
@@ -237,20 +241,20 @@ public static class DisplayConsole
         var members = c.ChatMembers
             .OrderByDescending(m => m.Id == meId)
             .Select(m => m.ToDisplayText(m.Id == meId))
-            .JoinToSingle("\n");
+            .JoinToSingle("\n<<<<<<<<<<_next_>>>>>>>>>\n");
 
         var messages = c.Messages
             .Select(m => m.ToDisplayText(
                 c.ChatMembers
                     .First(cm => cm.Id == m.UserId),
                 m.UserId == meId))
-            .JoinToSingle("\n");
+            .JoinToSingle("\n<<<<<<<<<<_next_>>>>>>>>>\n");
 
         return $"________START________\n\n" +
                $"{chat}\n" +
-               $"_______\n" +
+               $"_____**********_____\n" +
                $"{members}\n" +
-               $"_______\n" +
+               $"_____**********_____\n" +
                $"{messages}\n" +
                $"________END________\n\n";
     }
@@ -269,7 +273,8 @@ public static class DisplayConsole
     public static string ToDisplayText(this Message m, ChatMember messageOwner, bool iAmOwner)
     {
         return "______________MESSAGE_______________\n" +
-               $"Message owner:\n {messageOwner.ToDisplayText(iAmOwner)}\n" +
+               // $"Message owner:\n {messageOwner.ToDisplayText(iAmOwner)}\n" +
+               $"I AM OWNER: {(iAmOwner ? "+YES+" : "-NO-")}\n" +
                $"{nameof(m.Id)}: {m.Id}\n" +
                $"{nameof(m.Body)}: {m.Body}\n" +
                $"{nameof(m.IsRead)}: {m.IsRead}\n" +
