@@ -10,7 +10,10 @@ public record GetChatDto(
     DateTime CreatedDate,
     List<ChatMember> ChatMembers,
     List<Message> Messages,
-    int UnreadCount);
+    int UnreadCount)
+{
+    public List<Message> Messages { get; set; } = Messages;
+}
 
 public record ChatMember(
     int Id,
@@ -18,7 +21,7 @@ public record ChatMember(
     string? LastName,
     string? AvatarUrl,
     string Role);
-    
+
 public record Message(
     Guid Id,
     string Body,
@@ -27,7 +30,7 @@ public record Message(
     DateTime? ChangedDate,
     int ChatId,
     int UserId);
-    
+
 public enum ChatType
 {
     OneToOne = 1,

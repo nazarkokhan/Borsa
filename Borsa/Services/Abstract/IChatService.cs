@@ -9,7 +9,7 @@ public interface IChatService
 {
     public Task<ChatMember> GetMyProfile();
 
-    public Task<GetChatDto> GetChat(int id, int messagesCount);
+    public Task<GetChatDto?> GetChat(int id, int messagesCount);
 }
 
 public class ChatService : IChatService
@@ -43,7 +43,7 @@ public class ChatService : IChatService
         return me!;
     }
 
-    public async Task<GetChatDto> GetChat(int id, int messagesCount)
+    public async Task<GetChatDto?> GetChat(int id, int messagesCount)
     {
         var response = await _httpClient
             .GetAsync($"ChatV2?{nameof(id)}={id}&{nameof(messagesCount)}={messagesCount}");
@@ -57,6 +57,6 @@ public class ChatService : IChatService
 
         var chat = JsonSerializer.Deserialize<GetChatDto>(content, _serializerOptions);
 
-        return chat!;
+        return chat;
     }
 }

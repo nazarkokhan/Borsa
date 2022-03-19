@@ -19,12 +19,15 @@ namespace Borsa
     using Microsoft.AspNetCore.SignalR.Client;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
     using Services;
     using Services.Abstract;
 
-    internal static class Program
+    internal static partial class Program
     {
         private static HubConnection HubConnection { get; set; }
+        private static ILogger _logger = null!;
+        private static int totalUnreadMessagesCount = 0;
 
         private static async Task Main()
         {
@@ -66,40 +69,40 @@ namespace Borsa
                 .WithAutomaticReconnect()
                 .Build();
 
-            var me = await chatService.GetMyProfile();
+            var myUser = await chatService.GetMyProfile();
 
-            var chats = new List<GetChatDto>();
+            var chatList = new List<GetChatDto>();
 
             HubConnection.On<NewMessageDto>(
                 "ReceiveNewMessage",
                 async (newMessage) =>
                 {
-                    var message = newMessage.ToMessage();
-            
-                    var chat = chats.FirstOrDefault(c => c.Id == message.ChatId);
-            
+                    var message = newMessage.MapToMessage();
+
+                    var chat = chatList.FirstOrDefault(c => c.Id == message.ChatId);
+
                     if (chat is null)
                     {
                         chat = await chatService.GetChat(message.ChatId, 3);
-            
+
                         if (chat is null)
                         {
                             Console.WriteLine($"LOG ERROR: Chat with id: {message.ChatId} not found");
-            
+
                             return;
                         }
-            
-                        chat.ChatMembers.Add(me);
-            
-                        chats.Add(chat);
+
+                        chat.ChatMembers.Add(myUser);
+
+                        chatList.Add(chat);
                     }
-            
+
                     chat.Messages.Add(message);
-            
+
                     Console.Clear();
-            
-                    Console.WriteLine(chat.ToDisplayText(me.Id));
-            
+
+                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
+
                     Console.WriteLine($"#####(New message. Id: {newMessage.Id})#####\n");
                 });
 
@@ -107,7 +110,7 @@ namespace Borsa
                 "ReceiveUpdateMessage",
                 (updateMessage) =>
                 {
-                    var chat = chats.First(c => c.Id == updateMessage.ChatId);
+                    var chat = chatList.First(c => c.Id == updateMessage.ChatId);
 
                     if (chat is null)
                     {
@@ -137,7 +140,7 @@ namespace Borsa
 
                     Console.Clear();
 
-                    Console.WriteLine(chat.ToDisplayText(me.Id));
+                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
 
                     Console.WriteLine($"#####(Updated message. Id: {updateMessage.Id})#####\n");
                 });
@@ -161,6 +164,13 @@ namespace Borsa
 
                     Console.WriteLine($"#####(Read by messages. Ids:\n {reads})#####\n");
                 });
+
+            HubConnection.Reconnected += connectionId =>
+            {
+                Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
+                
+                return Task.CompletedTask;
+            };
 
             await HubConnection.StartAsync();
 
@@ -274,7 +284,7 @@ public static class DisplayConsole
     {
         return "______________MESSAGE_______________\n" +
                // $"Message owner:\n {messageOwner.ToDisplayText(iAmOwner)}\n" +
-               $"I AM OWNER: {(iAmOwner ? "+YES+" : "-NO-")}\n" +
+               $"I am owner: {(iAmOwner ? "+YES+" : "-NO-")}\n" +
                $"{nameof(m.Id)}: {m.Id}\n" +
                $"{nameof(m.Body)}: {m.Body}\n" +
                $"{nameof(m.IsRead)}: {m.IsRead}\n" +
@@ -288,7 +298,7 @@ public static class DisplayConsole
 
 public static class Mappers
 {
-    public static Message ToMessage(this NewMessageDto newMessageDto)
+    public static Message MapToMessage(this NewMessageDto newMessageDto)
     {
         return newMessageDto.Map(m => new Message(
             m.Id,
