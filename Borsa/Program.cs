@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Borsa;
 
 // ReSharper disable All
@@ -25,7 +26,32 @@ namespace Borsa
 
     internal static partial class Program
     {
-        private static HubConnection HubConnection { get; set; }
+        public static async Task<GetChatDto?> GetChatCached(this IChatService chatService, int chatId)
+        {
+            var chat = chatList.FirstOrDefault(c => c.Id == chatId);
+
+            if (chat is null)
+            {
+                chat = await chatService.GetChat(chatId, 3);
+
+                if (chat is null)
+                {
+                    Console.WriteLine($"LOG ERROR: Chat with id: {chatId} not found");
+
+                    return null;
+                }
+
+                chat.ChatMembers.Add(myUser);
+
+                chatList.Add(chat);
+            }
+
+            return chat;
+        }
+
+        private static List<GetChatDto> chatList = new List<GetChatDto>();
+        private static ChatMember myUser = null!;
+        private static HubConnection HubConnection { get; set; } = null!;
         private static ILogger _logger = null!;
         private static int totalUnreadMessagesCount = 0;
 
@@ -45,12 +71,10 @@ namespace Borsa
                 .AddSingleton<IConfiguration>(configuration)
                 .AddHttpClient(
                     nameof(LoginService),
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); }
-                )
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); })
                 .Services
                 .AddHttpClient<IChatService, ChatService>(
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); }
-                )
+                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); })
                 .AddHttpMessageHandler<AuthInterceptor>()
                 .Services
                 .BuildServiceProvider();
@@ -69,9 +93,7 @@ namespace Borsa
                 .WithAutomaticReconnect()
                 .Build();
 
-            var myUser = await chatService.GetMyProfile();
-
-            var chatList = new List<GetChatDto>();
+            myUser = await chatService.GetMyProfile();
 
             HubConnection.On<NewMessageDto>(
                 "ReceiveNewMessage",
@@ -79,25 +101,13 @@ namespace Borsa
                 {
                     var message = newMessage.MapToMessage();
 
-                    var chat = chatList.FirstOrDefault(c => c.Id == message.ChatId);
+                    var chat = await chatService.GetChatCached(message.ChatId);
 
                     if (chat is null)
-                    {
-                        chat = await chatService.GetChat(message.ChatId, 3);
+                        return;
 
-                        if (chat is null)
-                        {
-                            Console.WriteLine($"LOG ERROR: Chat with id: {message.ChatId} not found");
-
-                            return;
-                        }
-
-                        chat.ChatMembers.Add(myUser);
-
-                        chatList.Add(chat);
-                    }
-
-                    chat.Messages.Add(message);
+                    if (chat.Messages.All(m => m.Id != message.Id))
+                        chat.Messages.Add(message);
 
                     Console.Clear();
 
@@ -108,33 +118,32 @@ namespace Borsa
 
             HubConnection.On<UpdateMessageDto>(
                 "ReceiveUpdateMessage",
-                (updateMessage) =>
+                async (updateMessage) =>
                 {
-                    var chat = chatList.First(c => c.Id == updateMessage.ChatId);
+                    var (messageId, body, changedDate, chatId, userId) = updateMessage;
+
+                    var chat = await chatService.GetChatCached(chatId);
 
                     if (chat is null)
-                    {
-                        Console.WriteLine("___________________");
-                        Console.WriteLine("CHAT FOR UPDATE MESSAGE NOT FOUND");
-                        Console.WriteLine("___________________");
+                        return;
 
+                    var message = chat.Messages
+                        .FirstOrDefault(m => m.Id == messageId &&
+                                             m.UserId == userId);
+
+                    if (message is null)
+                    {
+                        Console.WriteLine("MESSAGE TO UPDATE NOT FOUND");
                         return;
                     }
 
-                    var message = chat.Messages
-                        .First(m => m.Id == updateMessage.Id &&
-                                    m.UserId == updateMessage.UserId);
-
-                    message = new Message(
-                        message.Id,
-                        updateMessage.Body,
-                        message.IsRead,
-                        message.CreatedDate,
-                        updateMessage.ChangedDate,
-                        updateMessage.ChatId,
-                        updateMessage.UserId);
-
                     chat.Messages.RemoveAll(x => x.Id == message.Id);
+
+                    message = message with
+                    {
+                        Body = body,
+                        ChangedDate = changedDate
+                    };
 
                     chat.Messages.Add(message);
 
@@ -142,23 +151,53 @@ namespace Borsa
 
                     Console.WriteLine(chat.ToDisplayText(myUser.Id));
 
-                    Console.WriteLine($"#####(Updated message. Id: {updateMessage.Id})#####\n");
+                    Console.WriteLine($"#####(Updated message. Id: {messageId})#####\n");
                 });
 
             HubConnection.On<ReadByMessagesDto>(
                 "ReceiveReadByMessages",
-                (readByMessages) =>
+                async (readByMessages) =>
                 {
-                    // var message = newMessage.ToMessage();
-                    //
-                    // var consoleMessage = "New message\n";
-                    //
-                    // consoleMessage += message.ToDisplayText();
-                    //
+                    var (messageIds, chatId, userId) = readByMessages;
+
+                    var chat = await chatService.GetChatCached(chatId);
+
+                    if (chat is null)
+                        return;
+
+                    foreach (var messageId in messageIds)
+                    {
+                        var message = chat.Messages
+                            .FirstOrDefault(m => m.Id == messageId);
+
+                        if (message is null)
+                        {
+                            Console.WriteLine($"MESSAGE: {messageId} TO READ NOT FOUND");
+                            return;
+                        }
+
+                        if (message.IsRead)
+                        {
+                            Console.WriteLine($"MESSAGE: {messageId} IS ALREADY READ");
+                            return;
+                        }
+
+                        chat.Messages.RemoveAll(x => x.Id == message.Id);
+
+                        message = message with
+                        {
+                            IsRead = true
+                        };
+
+                        chat.Messages.Add(message);
+                    }
+
 
                     Console.Clear();
 
-                    var reads = readByMessages.MessageIds
+                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
+
+                    var reads = messageIds
                         .Select(id => id.ToString())
                         .JoinToSingle("\n_-_: ");
 
@@ -168,7 +207,7 @@ namespace Borsa
             HubConnection.Reconnected += connectionId =>
             {
                 Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
-                
+
                 return Task.CompletedTask;
             };
 
@@ -195,7 +234,8 @@ namespace Borsa
                         await HubConnection.SendAsync(
                             "SendNewMessage",
                             chatId,
-                            message);
+                            message,
+                            Guid.NewGuid());
                         break;
 
                     case "Update":
@@ -290,7 +330,6 @@ public static class DisplayConsole
                $"{nameof(m.IsRead)}: {m.IsRead}\n" +
                $"{nameof(m.CreatedDate)}: {m.CreatedDate}\n" +
                $"{nameof(m.ChangedDate)}: {m.ChangedDate}\n" +
-               $"{nameof(m.ChatId)}: {m.ChatId}\n" +
                $"{nameof(m.UserId)}: {m.UserId}\n" +
                "______________MESSAGE_______________\n";
     }
