@@ -24,6 +24,11 @@ namespace Borsa
     using Services;
     using Services.Abstract;
 
+    public record NotificationBanner(
+        string Title,
+        string Body,
+        Dictionary<string, string>? Data);
+    
     internal static partial class Program
     {
         public static async Task<GetChatDto?> GetChatCached(this IChatService chatService, int chatId)
@@ -71,10 +76,10 @@ namespace Borsa
                 .AddSingleton<IConfiguration>(configuration)
                 .AddHttpClient(
                     nameof(LoginService),
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); })
+                    client => { client.BaseAddress = new Uri("http://localhost:7000/"); })
                 .Services
                 .AddHttpClient<IChatService, ChatService>(
-                    client => { client.BaseAddress = new Uri(Api.BaseUrl + "api/"); })
+                    client => { client.BaseAddress = new Uri("http://localhost:5120/"); })
                 .AddHttpMessageHandler<AuthInterceptor>()
                 .Services
                 .BuildServiceProvider();
@@ -84,126 +89,27 @@ namespace Borsa
             var chatService = provider.GetRequiredService<IChatService>();
 
             var token = await logInService.LogInAsync(new LogInQuery(
-                "superadmin@gmail.com",
-                "Admin123"));
+                "+380983206870",
+                "000000",
+                "string",
+                "string",
+                "string"));
 
             HubConnection = new HubConnectionBuilder()
-                .WithUrl(Api.BaseUrl + "hub",
+                .WithUrl("http://localhost:5120/finalto-quotes",
                     options => { options.AccessTokenProvider = () => Task.FromResult(token.Token); })
                 .WithAutomaticReconnect()
                 .Build();
 
-            myUser = await chatService.GetMyProfile();
+            // myUser = await chatService.GetMyProfile();
 
-            HubConnection.On<NewMessageDto>(
-                "ReceiveNewMessage",
-                async (newMessage) =>
+            HubConnection.On<NotificationBanner>(
+                "OnNotificationBanner",
+                (newMessage) =>
                 {
-                    var message = newMessage.MapToMessage();
-
-                    var chat = await chatService.GetChatCached(message.ChatId);
-
-                    if (chat is null)
-                        return;
-
-                    if (chat.Messages.All(m => m.Id != message.Id))
-                        chat.Messages.Add(message);
-
-                    Console.Clear();
-
-                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
-
-                    Console.WriteLine($"#####(New message. Id: {newMessage.Id})#####\n");
+                    Console.WriteLine(newMessage.ToString());
                 });
-
-            HubConnection.On<UpdateMessageDto>(
-                "ReceiveUpdateMessage",
-                async (updateMessage) =>
-                {
-                    var (messageId, body, changedDate, chatId, userId) = updateMessage;
-
-                    var chat = await chatService.GetChatCached(chatId);
-
-                    if (chat is null)
-                        return;
-
-                    var message = chat.Messages
-                        .FirstOrDefault(m => m.Id == messageId &&
-                                             m.UserId == userId);
-
-                    if (message is null)
-                    {
-                        Console.WriteLine("MESSAGE TO UPDATE NOT FOUND");
-                        return;
-                    }
-
-                    chat.Messages.RemoveAll(x => x.Id == message.Id);
-
-                    message = message with
-                    {
-                        Body = body,
-                        ChangedDate = changedDate
-                    };
-
-                    chat.Messages.Add(message);
-
-                    Console.Clear();
-
-                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
-
-                    Console.WriteLine($"#####(Updated message. Id: {messageId})#####\n");
-                });
-
-            HubConnection.On<ReadByMessagesDto>(
-                "ReceiveReadByMessages",
-                async (readByMessages) =>
-                {
-                    var (messageIds, chatId, userId) = readByMessages;
-
-                    var chat = await chatService.GetChatCached(chatId);
-
-                    if (chat is null)
-                        return;
-
-                    foreach (var messageId in messageIds)
-                    {
-                        var message = chat.Messages
-                            .FirstOrDefault(m => m.Id == messageId);
-
-                        if (message is null)
-                        {
-                            Console.WriteLine($"MESSAGE: {messageId} TO READ NOT FOUND");
-                            return;
-                        }
-
-                        if (message.IsRead)
-                        {
-                            Console.WriteLine($"MESSAGE: {messageId} IS ALREADY READ");
-                            return;
-                        }
-
-                        chat.Messages.RemoveAll(x => x.Id == message.Id);
-
-                        message = message with
-                        {
-                            IsRead = true
-                        };
-
-                        chat.Messages.Add(message);
-                    }
-
-
-                    Console.Clear();
-
-                    Console.WriteLine(chat.ToDisplayText(myUser.Id));
-
-                    var reads = messageIds
-                        .Select(id => id.ToString())
-                        .JoinToSingle("\n_-_: ");
-
-                    Console.WriteLine($"#####(Read by messages. Ids:\n {reads})#####\n");
-                });
-
+            
             HubConnection.Reconnected += connectionId =>
             {
                 Console.WriteLine($"Connection successfully reconnected. The ConnectionId is now: {connectionId}");
@@ -215,63 +121,8 @@ namespace Borsa
 
             while (true)
             {
-                Console.WriteLine("Action type:");
-                var methodName = Console.ReadLine();
-                Console.WriteLine("----------");
-
-                Console.WriteLine("ChatId:");
-                var chatId = int.Parse(Console.ReadLine()!);
-                Console.WriteLine("----------");
-
-                string? message;
-                switch (methodName)
-                {
-                    case "New":
-                        Console.WriteLine("Write message:");
-                        message = Console.ReadLine();
-                        Console.WriteLine("----------");
-
-                        await HubConnection.SendAsync(
-                            "SendNewMessage",
-                            chatId,
-                            message,
-                            Guid.NewGuid());
-                        break;
-
-                    case "Update":
-                        Console.WriteLine("Write message id:");
-                        var messageId = Guid.Parse(Console.ReadLine()!);
-                        Console.WriteLine("----------");
-
-                        Console.WriteLine("Write message:");
-                        message = Console.ReadLine();
-                        Console.WriteLine("----------");
-
-                        await HubConnection.SendAsync(
-                            "SendUpdateMessage",
-                            chatId,
-                            messageId,
-                            message);
-                        break;
-
-                    case "Read":
-                        var messageIds = Console.ReadLine()!
-                            .Split(", ")
-                            .Select(id => Guid.Parse(id))
-                            .ToList();
-
-                        await HubConnection.SendAsync(
-                            "SendReadMessages",
-                            chatId,
-                            messageIds);
-                        break;
-
-                    default:
-                        Console.WriteLine("WRONG METHOD");
-                        break;
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                // await HubConnection.SendCoreAsync("Do", new []{"fak"});
+                await Task.Delay(1000);
             }
         }
     }

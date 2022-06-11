@@ -12,12 +12,12 @@ public class LogInQueryResult
         DateTime refreshTokenExpTime)
     {
         Token = token;
-        TokenExpTime = tokenExpTime;
+        TokenExpTime = DateTime.Now.AddDays(10);
         RefreshToken = refreshToken;
         RefreshTokenExpTime = refreshTokenExpTime;
     }
 
-    [JsonPropertyName("token")]
+    [JsonPropertyName("idToken")]
     public string Token { get; }
         
     [JsonPropertyName("tokenExpTime")]

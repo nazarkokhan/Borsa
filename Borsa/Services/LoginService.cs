@@ -28,16 +28,15 @@ public class LoginService : ILoginService
         var json = JsonSerializer.Serialize(logInQuery);
 
         var response = await _httpClient
-            .PostAsync(
-                "Auth/LogIn",
-                new StringContent(json, Encoding.UTF8, FileName.Json)
+            .PostAsJsonAsync(
+                "auth/token", logInQuery
             );
 
-        response.EnsureSuccessStatusCode();
+        var readAsStringAsync = await response.Content.ReadAsStringAsync();
 
         var responseToken = JsonSerializer
             .Deserialize<LogInQueryResult>(
-                await response.Content.ReadAsStringAsync()
+                readAsStringAsync
             );
 
         await _jsonFileTokenStorage.SaveToken(responseToken!);
@@ -56,7 +55,7 @@ public class LoginService : ILoginService
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
             return null!;
-            
+
         response.EnsureSuccessStatusCode();
 
         var responseToken = JsonSerializer

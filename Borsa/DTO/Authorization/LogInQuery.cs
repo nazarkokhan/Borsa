@@ -1,16 +1,8 @@
 ﻿namespace Borsa.DTO.Authorization;
 
-public class LogInQuery
-{
-    public LogInQuery(
-        string email, 
-        string password)
-    {
-        Email = email;
-        Password = password;
-    }
-
-    public string Email { get; }
-
-    public string Password { get; }
-}
+public record LogInQuery(
+    string Username, 
+    string Password,
+    string Code,
+    string DeviceId,
+    string DeviceToken);
